@@ -110,7 +110,7 @@
       ];
       // as proposições ficam separadas (servem para os testes); a partida salva só os textos
       const proposicoes = pistas.map(p => p.expr);
-      pistas.forEach(p => { delete p.expr; });
+    
       return { solucao: verdadeiro, pistas, passos, proposicoes };
     }
     throw new Error('Não foi possível montar as pistas');
