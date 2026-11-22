@@ -1,4 +1,3 @@
-
 /* main.js — telas, navegação e integração dos módulos do Detetive Lógico.
    Responsável: Integrante 5 (Integração, Interações e Testes). */
 (function () {
@@ -227,8 +226,8 @@
           <ol>
             <li>
               Clique em <strong>Revelar pista</strong>.
-              A pista fica visível para todos.
-              Você pode revelar uma pista por vez.
+              A pista aparece só para você.
+              Você recebe uma pista por vez.
             </li>
             <li>
               Use o tempo que sobra para analisar as pistas
@@ -941,7 +940,7 @@
       estado.ultimoEvento &&
       estado.ultimoEvento.tipo === 'pista' &&
       chave !== A.online.eventoVisto
-        ? estado.ultimoEvento.pista
+        ? null
         : null;
 
     atualizarInvestigacao(false, novaPista);
@@ -952,7 +951,7 @@
 
       if (ev && ev.jogador !== meuNome()) {
         if (ev.tipo === 'pista') {
-          toast(`${ev.jogador} revelou a pista ${ev.n}.`);
+          toast(`${ev.jogador} recebeu uma pista.`);
         }
         if (ev.tipo === 'erro') {
           toast(`${ev.jogador} acusou e errou.`);
@@ -1140,7 +1139,7 @@
 
             <div class="titulo-coluna">
               <h3 id="titulo-pistas">
-                Pistas reveladas
+                Suas pistas
               </h3>
 
               <span data-contagem></span>
@@ -1167,7 +1166,9 @@
     const est = A.estado;
     const cen = cenario();
     const atual = P.jogadorDaVez(est);
-    const restantes = P.pistasRestantes(est);
+    const obs = idObservador();
+    const minhas = P.idsDe(est, obs);
+    const restantes = P.pistasDisponiveis(est, obs).length;
 
     const euId =
       A.modo === 'online'
@@ -1237,7 +1238,7 @@
         'Analise, marque a tabela e acuse ou passe a vez.';
     } else if (restantes === 0) {
       aviso =
-        'Todas as pistas já foram reveladas.';
+        'Não há pista nova para você nesta vez.';
     }
 
     app.querySelector('[data-dossie]').innerHTML = `
@@ -1306,9 +1307,9 @@
       </div>
 
       <p class="contador">
-        ${est.reveladas.length}
+        Você tem ${minhas.length}
         de ${est.pistas.length}
-        pistas reveladas
+        pistas
       </p>
 
       ${aviso ? `
@@ -1318,9 +1319,9 @@
     pintarRelogio();
 
     app.querySelector('[data-contagem]').textContent =
-      `${est.reveladas.length} de ${est.pistas.length}`;
+      `${minhas.length} de ${est.pistas.length}`;
 
-    const lista = est.reveladas.slice().reverse();
+    const lista = minhas.slice().reverse();
 
     app.querySelector('[data-pistas]').innerHTML =
       lista.length
@@ -1328,7 +1329,8 @@
             id => cartaoPista(
               est,
               id,
-              id === novaPista
+              id === novaPista,
+              minhas.indexOf(id) + 1
             )
           ).join('')
         : `
@@ -1346,6 +1348,16 @@
   function esconderTabela() {
     const t = app.querySelector('[data-tabela]');
 
+    const pistas = app.querySelector('[data-pistas]');
+
+    if (pistas && A.modo === 'local') {
+      pistas.innerHTML = `
+        <li class="vazio">
+          As pistas do próximo detetive aparecem
+          quando ele começar o turno.
+        </li>`;
+    }
+
     if (t && A.modo === 'local') {
       t.innerHTML = `
         <div class="vazio">
@@ -1355,19 +1367,14 @@
     }
   }
 
-  function cartaoPista(est, id, nova = false) {
+  function cartaoPista(est, id, nova = false, numero = null) {
     const p = est.pistas.find(x => x.id === id);
-    const n = est.reveladas.indexOf(id) + 1;
+    const n = numero || est.reveladas.indexOf(id) + 1;
 
     return `
       <li class="pista ${nova ? 'nova' : ''}">
         <div class="topo">
           <span>Pista ${n}</span>
-          <span>
-            ${est.reveladaPor[id]
-              ? 'revelada por ' + esc(est.reveladaPor[id])
-              : ''}
-          </span>
         </div>
 
         <p class="frase">
@@ -1539,9 +1546,8 @@
     A.online.eventoVisto = chaveEvento(novo);
     aplicar(novo);
 
-    const id = novo.reveladas[
-      novo.reveladas.length - 1
-    ];
+    const minhas = P.idsDe(novo, idObservador());
+    const id = minhas[minhas.length - 1];
 
     atualizarInvestigacao(false, id);
 
@@ -1551,7 +1557,7 @@
       <h2>Nova pista</h2>
 
       <ol class="pistas">
-        ${cartaoPista(novo, id, true)}
+        ${cartaoPista(novo, id, true, minhas.length)}
       </ol>
 
       <p class="suave">
@@ -1578,15 +1584,15 @@
     if (
       !confirmado &&
       !est.revelouNaVez &&
-      P.pistasRestantes(est) > 0
+      P.pistasDisponiveis(est, idObservador()).length > 0
     ) {
       abrirModal(`
         <h2>Passar sem revelar pista?</h2>
 
         <p>
           Você ainda não revelou a pista desta vez.
-          Se passar agora, ela continua guardada
-          para o próximo detetive.
+          Se passar agora, você fica sem pista
+          nesta vez.
         </p>
 
         <div class="acoes">
