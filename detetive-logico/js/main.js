@@ -183,7 +183,7 @@
           </div>
 
           <p class="rodape-capa">
-            3 detetives. Até 2 minutos por turno.
+            3 a 6 detetives. Até 2 minutos por turno.
             Descubra quem, onde e com qual arma.
           </p>
 
@@ -501,12 +501,14 @@
                role="group"
                aria-labelledby="rot-qtd">
 
-            <button type="button"
-                    data-acao="qtd"
-                    data-n="3"
-                    aria-pressed="true">
-              3
-            </button>
+            ${[3, 4, 5, 6].map(q => `
+              <button type="button"
+                      data-acao="qtd"
+                      data-n="${q}"
+                      aria-pressed="${q === n}">
+                ${q}
+              </button>
+            `).join('')}
           </div>
 
           ${Array.from({ length: n }, (_, i) => `
@@ -796,7 +798,7 @@
     const lista = o.jogadores;
     const n = lista.length;
 
-    const pode = n === 3;
+    const pode = n >= 3 && n <= 6;
 
     trocarTela('lobby', `
       <div class="tela">
@@ -826,7 +828,7 @@
           </p>
 
           <h3>
-            Detetives na sala (${n} de 3)
+            Detetives na sala (${n} de 6)
           </h3>
 
           <ul class="lista-sala">
@@ -856,8 +858,8 @@
             <p class="suave">
               ${n < 3
                 ? `Faltam ${3 - n} detetive(s) para começar.`
-                : n > 3
-                  ? 'A sala permite somente 3 detetives.'
+                : n > 6
+                  ? 'A sala permite no máximo 6 detetives.'
                   : 'Todos dentro? Pode começar.'}
             </p>
           ` : `
@@ -872,8 +874,8 @@
   async function iniciarOnline() {
     const o = A.online;
 
-    if (o.jogadores.length !== 3) {
-      toast('A partida precisa de exatamente 3 detetives.');
+    if (o.jogadores.length < 3 || o.jogadores.length > 6) {
+      toast('A partida precisa de 3 a 6 detetives.');
       return;
     }
 
@@ -2093,7 +2095,7 @@
 
       case 'qtd':
         guardarNomes();
-        A.numJogadores = 3;
+        A.numJogadores = +b.dataset.n;
         telaJogadores();
         break;
 

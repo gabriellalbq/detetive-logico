@@ -59,7 +59,11 @@
   function pistasDisponiveis(est, jogadorId) {
     const minhas = idsDe(est, jogadorId);
     const naRodada = est.dadasNaRodada || [];
-    return est.pistas.filter(p => !minhas.includes(p.id) && !naRodada.includes(p.id));
+    const semRepetir = est.pistas.filter(p => !minhas.includes(p.id) && !naRodada.includes(p.id));
+    if (semRepetir.length) return semRepetir;
+    // com muitos jogadores, nas rodadas finais pode faltar pista inédita na rodada:
+    // aí vale repetir uma pista da rodada, desde que o jogador ainda não a tenha
+    return est.pistas.filter(p => !minhas.includes(p.id));
   }
 
   function proximaVez(est) {
